@@ -41,7 +41,7 @@ dSep(sem_TrophicAsynchrony)
 summary(sem_TrophicAsynchrony)
 
 ######### For 30 independent lakes
-dd_indLake <- read.csv("C:/Users/libzh/Desktop/Biomass & Biovolume data (with environmentnt)/DD_Globalresults_30sites_0715.csv", check.names = FALSE)
+dd_indLake <- read.csv("DD_Globalresults.csv", check.names = FALSE)
 
 summary(lm(log10(foodweb_sta) ~ log10(TP), data = dd_indLake))
 summary(lm(log10(trophic_sta) ~ log10(TP), data = dd_indLake))
