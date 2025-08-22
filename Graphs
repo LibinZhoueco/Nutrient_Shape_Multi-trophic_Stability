@@ -165,7 +165,7 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(rnaturalearth)
 ##########
-DD_sites <- read.csv("C:/Users/libzh/Desktop/Biomass & Biovolume data (with environmentnt)/Site_Coordinate0715.csv", check.name = FALSE) 
+DD_sites <- read.csv("Site_Coordinate.csv", check.name = FALSE) 
 sf_use_s2(FALSE)
 world_map <- ne_countries(scale = "large", returnclass = "sf") %>%
   st_make_valid() %>%
