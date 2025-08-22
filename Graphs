@@ -1,0 +1,223 @@
+##################### 
+
+library(tidyverse)
+library(ggplot2)
+library(vegan)
+library(piecewiseSEM)
+library(cowplot)
+library(patchwork)
+library(car)
+
+dd_th <- read.csv("TH_results.csv")
+dd_global <- read.csv("DD_Globalresults.csv", check.names = FALSE)
+
+dd_global_1 <- dd_global %>%
+  select(Siteid, TP, Temp, foodweb_sta, trophic_sta, trophic_asyn) %>%
+  mutate(Scale = "Independent lakes")
+
+dd_th_1 <- dd_th %>%
+  select(location_id, trophic_sta, trophic_asyn, foodweb_sta, mean_TP, mean_TN, mean_Temp) %>%
+  rename(TP = mean_TP, TN = mean_TN, Temp = mean_Temp) %>%
+  mutate(Scale = "Taihu lake")
+
+########################first define my_theme
+my_theme <- theme_bw() +
+  theme(
+    axis.title.x = element_text(size = 25), axis.title.y = element_text(size = 25),
+    axis.text.x = element_text(size = 20), axis.text.y = element_text(size = 20),
+    panel.grid = element_blank(),
+    axis.line = element_line(colour = "black"),
+    legend.position = "right",
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.key.size = unit(0.5, "cm"), ### size of the legend symbols
+    legend.key = element_rect(fill = "white", colour = "white"))
+
+########################### Muiti-trophic stability vs TP
+## Taihu lake
+summary(lm(log10(foodweb_sta) ~ log10(TP) , data = dd_th_1))
+p_foodwebsta_TH <- ggplot(dd_th_1, aes(x = log10(TP), y = log10(foodweb_sta))) +
+  geom_point(size = 10, stroke = 1.5, color = "#00468BFF") +
+  geom_smooth(method = "lm", se = TRUE, color = "#00468BFF", linewidth = 2) +
+  scale_y_continuous(limits = c(-0.2, 0.6), breaks = seq(-0.2, 0.6, 0.2)) +
+  labs(y = "Log10 (Multi-trophic stability)", 
+       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  annotate("text", x = min(log10(dd_th_1$TP)), y = 0.6, 
+           label = expression(italic(R^2)~"="~0.228*", "~italic(P)~"="~0.006), 
+           hjust = 0, parse = TRUE,color = "#00468BFF",
+           size = 6) +
+  my_theme
+p_foodwebsta_TH_1 <- ggdraw(p_foodwebsta_TH) + 
+  draw_label("A",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+p_foodwebsta_TH_1
+
+## 30 lakes
+summary(lm(log10(foodweb_sta) ~ log10(TP) , data = dd_global_1))
+
+p_foodwebsta_glo <- ggplot(dd_global_1, aes(x = log10(TP), y = log10(foodweb_sta))) +
+  geom_point(size = 10, stroke = 1.5, shape = 1, color = "darkred") +
+  geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2) +
+  scale_y_continuous(limits = c(-0.4, 1.2), breaks = seq(-0.4, 1.2, 0.4)) +
+  scale_x_continuous(limits = c(-2.5, 0.5), 
+                     breaks = seq(-2.5, 0.5, 0.5)) +
+  labs(y = "Log10 (Multi-trophic stability)", 
+       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  annotate("text", x = min(log10(dd_global_1$TP)), y = 1.2, 
+           label = expression(italic(R^2)~"="~0.656*", "~italic(P)~"<"~0.001), 
+           hjust = 0, parse = TRUE,color = "darkred",
+           size = 6) +
+  theme_bw() +
+  my_theme
+p_foodwebsta_glo
+p_foodwebsta_glo_1 <- ggdraw(p_foodwebsta_glo) +
+  draw_label("D",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+p_foodwebsta_glo_1
+
+#p_foodwebsta <- ggdraw(p_foodwebsta_TH_1) +
+#  draw_plot(p_foodwebsta_glo, x = 0.58, y = 0.58,  width = 0.4,  height = 0.4, scale = 0.9)  
+#p_foodwebsta
+
+################## Trophic stability
+## Taihu lake
+summary(lm(log10(trophic_sta) ~ log10(TP) , data = dd_th_1))
+p_trophicsta_TH <- ggplot(dd_th_1, aes(x = log10(TP), y = log10(trophic_sta))) +
+  geom_point(size = 10, color = "#00468BFF") +
+  geom_smooth(method = "lm", se = TRUE, color = "#00468BFF", linewidth = 2) +
+  scale_x_continuous(limits = c(-1.5, -0.6), 
+                     breaks = seq(-1.5, -0.6, 0.3)) +
+  scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.2)) +
+  labs(y = "Log10 (Within-trophic stability)", 
+       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  annotate("text", x = min(log10(dd_th_1$TP)), y = 0.4, 
+           label = expression(italic(R^2)~"="~0.191*", "~italic(P)~"="~0.013), 
+           hjust = 0, parse = TRUE,color = "#00468BFF",
+           size = 6) +
+  my_theme
+p_trophicsta_TH_1 <- ggdraw(p_trophicsta_TH) +
+  draw_label("B",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+p_trophicsta_TH_1
+
+## 30 lakes
+summary(lm(log10(trophic_sta) ~ log10(TP) , data = dd_global_1))
+p_trophicsta_glo <- ggplot(dd_global_1, aes(x = log10(TP), y = log10(trophic_sta))) +
+  geom_point(size = 10, stroke = 1.5, shape = 1, color = "darkred") +
+  geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2) +
+  scale_x_continuous(limits = c(-2.5, 0.5), 
+                     breaks = seq(-2.5, 0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.4, 1.2), breaks = seq(-0.4, 1.2, 0.4)) +
+  labs(y = "Log10 (Within-trophic stability)", 
+       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  annotate("text", x = min(log10(dd_global_1$TP)), y = 1.2, 
+           label = expression(italic(R^2)~"="~0.639*", "~italic(P)~"<"~0.001), 
+           hjust = 0, parse = TRUE,color = "darkred",
+           size = 6) +
+  my_theme
+p_trophicsta_glo_1 <- ggdraw(p_trophicsta_glo) +
+  draw_label("E",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+p_trophicsta_glo_1
+
+############ Trophic asynchrony
+## Taihu lake
+summary(lm(log10(trophic_asyn) ~ log10(TP) , data = dd_th_1))
+p_trophicasyn_TH <- ggplot(dd_th_1, aes(x = log10(TP), y = log10(trophic_asyn))) +
+  geom_point(size = 10, color = "#00468BFF") +
+  geom_smooth(method = "lm", se = TRUE, color = "#00468BFF", linewidth = 2) +
+  scale_x_continuous(limits = c(-1.5, -0.6), 
+                     breaks = seq(-1.5, -0.6, 0.3)) +
+  scale_y_continuous(limits = c(0, 0.16), breaks = seq(0, 0.16, 0.04)) +
+  labs(y = "Log10 (Cross-trophic asynchrony)", 
+       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  #x = "PC1(TP, TN)") +
+  annotate("text", x = min(log10(dd_th_1$TP)), y = 0.16, 
+           label = expression(italic(R^2)~"="~0.156*", "~italic(P)~"="~0.025), 
+           hjust = 0, parse = TRUE,color = "#00468BFF",
+           size = 6) +
+  my_theme
+p_trophicasyn_TH_1 <- ggdraw(p_trophicasyn_TH) +
+  draw_label("C",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+p_trophicasyn_TH_1
+
+## 30 lakes
+summary(lm(log10(trophic_asyn) ~ log10(TP) , data = dd_global_1))
+p_trophicasyn_glo <- ggplot(dd_global_1, aes(x = log10(TP), y = log10(trophic_asyn))) +
+  geom_point(size = 10, stroke = 1.5, shape = 1, color = "darkred") +
+  geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2, linetype = "dashed") +
+  scale_y_continuous(limits = c(0, 0.2), breaks = seq(0, 0.2, 0.05)) +
+  scale_x_continuous(limits = c(-2.5, 0.5), 
+                     breaks = seq(-2.5, 0.5, 0.5)) +
+  labs(y = "Log10 (Cross-trophic asynchrony)", 
+       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  theme_bw() + my_theme
+p_trophicasyn_glo
+p_trophicasyn_glo_1 <- ggdraw(p_trophicasyn_glo) +
+  draw_label("F",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+p_trophicasyn_glo_1
+
+######################### Combine the plots
+library(patchwork)
+P_fodowebstaMetric <- (p_foodwebsta_TH_1 + p_trophicsta_TH_1 + p_trophicasyn_TH_1)/ (p_foodwebsta_glo_1 + p_trophicsta_glo_1 + p_trophicasyn_glo_1) 
+P_fodowebstaMetric
+
+
+################################ Maps for sampling sites
+library(sf)     
+library(rnaturalearth) 
+library(rnaturalearthdata)
+library(rnaturalearth)
+##########
+DD_sites <- read.csv("C:/Users/libzh/Desktop/Biomass & Biovolume data (with environmentnt)/Site_Coordinate0715.csv", check.name = FALSE) 
+sf_use_s2(FALSE)
+world_map <- ne_countries(scale = "large", returnclass = "sf") %>%
+  st_make_valid() %>%
+  st_union()
+
+Main_plot <- ggplot() +
+  geom_sf(data = world_map, fill = "azure1") +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.title = element_blank(),
+    axis.ticks.length = unit(0, "pt"),
+  ) +
+  geom_point(data = DD_sites, aes(x = Longitude, y = Latitude), size = 1.5, alpha = 1, color = "#E31A1C") +
+  theme(legend.position = "right",
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 15)) +
+  coord_sf(expand = FALSE) 
+Main_plot
+
+################################# For marine systems
+library(rnaturalearthdata)
+DD_europe <- DD_sites %>%
+  filter(!Siteid %in% c("MO", "ME", "SP","CR","Lake_Taihu"))
+
+nordic_countries <- ne_countries(scale = "medium", returnclass = "sf") %>%
+  filter(name_en %in% c("Sweden", "Denmark"))
+p_euro <- ggplot() +
+  geom_sf(data = nordic_countries, fill = "azure1", color = "black", size = 0.3) +
+  geom_point(data = DD_europe, 
+             aes(x = Longitude, y = Latitude),
+             color = "#E31A1C", size = 2, alpha = 0.8) +
+  coord_sf(xlim = c(8, 25), ylim = c(54, 70)) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),      # 删除坐标轴刻度标签
+    axis.title = element_blank(),     # 删除坐标轴标题
+    panel.grid = element_line(color = "gray90", size = 0.2),
+    panel.background = element_rect(fill = "white")
+  )
+p_euro
+
+europe_grob <- ggplotGrob(p_euro)
+Main_plot_1 <- Main_plot +
+  annotation_custom(grob = europe_grob,
+                    xmin = -60, xmax = 30,
+                    ymin = -60, ymax = 40)
+Main_plot_1
+
+Extended_Figure_1 <- Main_plot_1
+
+
+
+
+
