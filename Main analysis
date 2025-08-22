@@ -1,0 +1,75 @@
+######################
+rm(list = ls())
+
+library(tidyverse)
+library(vegan)
+library(piecewiseSEM)
+
+##### For Taihu Lake datasets
+dd <- read.csv("TH_results.csv")
+
+#### Check the relationship between TP and stability metrics
+summary(lm(log10(foodweb_sta) ~ log10(mean_TP), data = dd))
+summary(lm(log10(trophic_sta) ~ log10(mean_TP), data = dd))
+summary(lm(log10(trophic_asyn) ~ log10(mean_TP), data = dd))
+
+#### Then we do the SEM for trophic stability ####
+sem_TrophicStability <- psem(
+  lm(log10(trophic_sta) ~ log10(species_asynchrony_Zooplankton) +  log10(species_asynchrony_Phytoplankton) +
+       log10(species_stability_Phytoplankton) + log10(species_stability_Zooplankton) + log10(rich_Phytoplankton), data = dd),
+  lm(log10(species_asynchrony_Phytoplankton) ~  log10(mean_TP), data = dd),
+  lm(log10(species_asynchrony_Zooplankton) ~ log10(mean_TP) + log10(rich_Zooplankton) , data = dd),
+  lm(log10(species_stability_Zooplankton) ~   log10(rich_Phytoplankton), data = dd),
+  lm(log10(rich_Zooplankton) ~ log10(mean_TP), data = dd),
+  
+  log10(species_asynchrony_Phytoplankton) %~~% log10(species_stability_Phytoplankton),
+  log10(rich_Phytoplankton) %~~% log10(rich_Zooplankton),
+  
+  data = dd)
+dSep(sem_TrophicStability)
+summary(sem_TrophicStability)
+
+########## SEM for trophic asynchrony ####
+sem_TrophicAsynchrony <- psem(
+  lm(log10(trophic_asyn) ~  log10(Total_Biomass_Phytoplankton), data = dd),
+  lm(log10(Total_Biomass_Phytoplankton) ~   log10(mean_TP),  data = dd),
+  lm(log10(MC_prop) ~   log10(mean_TP), data = dd),
+
+  data = dd 
+)
+dSep(sem_TrophicAsynchrony)
+summary(sem_TrophicAsynchrony)
+
+######### For 30 independent lakes
+dd_indLake <- read.csv("C:/Users/libzh/Desktop/Biomass & Biovolume data (with environmentnt)/DD_Globalresults_30sites_0715.csv", check.names = FALSE)
+
+summary(lm(log10(foodweb_sta) ~ log10(TP), data = dd_indLake))
+summary(lm(log10(trophic_sta) ~ log10(TP), data = dd_indLake))
+summary(lm(log10(trophic_asyn) ~ log10(TP), data = dd_indLake))
+
+#### Then we do the SEM for within-trophic stability ####
+sem_TrophicStability_glob <- psem(
+  lm(log10(trophic_sta) ~ log10(Popsasyn_Zooplankton) +  log10(Popsasyn_Phytoplankton) +
+       log10(Popsta_Zooplankton) + log10(Popsta_Phytoplankton) , data = dd_indLake),
+  lm(log10(Popsasyn_Phytoplankton) ~  log10(rich_Phytoplankton) + log10(TP), data = dd_indLake),
+  lm(log10(Popsasyn_Zooplankton) ~ log10(TP) , data = dd_indLake),
+  lm(log10(Popsta_Phytoplankton) ~   log10(rich_Phytoplankton), data = dd_indLake),
+  lm(log10(rich_Phytoplankton) ~ log10(TP), data = dd_indLake),
+  
+  log10(Popsasyn_Phytoplankton) %~~% log10(Popsasyn_Zooplankton),
+
+  
+  data = dd_indLake)
+dSep(sem_TrophicStability_glob)
+summary(sem_TrophicStability_glob)
+
+
+
+
+
+
+
+
+
+
+
