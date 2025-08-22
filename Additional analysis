@@ -1,0 +1,202 @@
+#######
+library(tidyverse)
+library(vegan)
+library(piecewiseSEM)
+
+library(stats)
+library(ggplot2)
+library(ggfortify)
+library(ggrepel)
+library(factoextra)
+library(patchwork)
+
+dd <- read.csv("TH_results.csv", check.names = FALSE)
+
+pca_vars <- prcomp(dd[, c("mean_TN", "mean_TP","mean_DO", "mean_pH", "mean_Temp","mean_Secchi", "mean_Depth")], scale. = TRUE)
+
+summary(pca_vars)
+### rotation matrix
+print(pca_vars$rotation)
+
+# create a data frame for the loadings
+loadings_df <- as.data.frame(pca_vars$rotation)
+loadings_df$vars <- rownames(pca_vars$rotation)
+loadings_df$Variable <- rownames(loadings_df)
+
+P_PCA <- ggplot() +
+  theme_bw() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    legend.position = "none") +
+  geom_point(data = as.data.frame(pca_vars$x), 
+             aes(x = PC1, y = PC2), 
+             color = "black", 
+             size = 2) + ## add the points
+  geom_segment(data = loadings_df,
+               aes(x = 0, y = 0, 
+                   xend = PC1 * 5, 
+                   yend = PC2 * 5,
+                   color = Variable),
+               arrow = arrow(length = unit(0.2, "cm")),
+               size = 1) + ## add the arrows
+  geom_text_repel(data = loadings_df,
+                  aes(x = PC1 * 5,
+                      y = PC2 * 5,
+                      label = Variable,
+                      color = Variable),
+                  size = 4,
+                  box.padding = 0.5,
+                  point.padding = 0.5) +
+  scale_color_brewer(palette = "Dark2") +
+  coord_fixed() +
+  labs(x = paste0("PC1 (", round(pca_vars$sdev[1]^2/sum(pca_vars$sdev^2)*100, 2), "%)"),
+       y = paste0("PC2 (", round(pca_vars$sdev[2]^2/sum(pca_vars$sdev^2)*100, 2), "%)")) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", size = 0.5) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50", size = 0.5) 
+P_PCA
+
+### extract the scores of the first two axises and add them to the data frame
+pca_scores <- as.data.frame(predict(pca_vars))
+dd$PC1 = -pca_scores$PC1
+dd$PC2 = -pca_scores$PC2
+
+#### visualize the contributions of variables to the first two dimensions
+var_contrib_1 <- get_pca_var(pca_vars)$contrib
+var_contrib_df_1 <- data.frame(
+  Variable = rownames(var_contrib_1),
+  Contribution = var_contrib_1[, 1] 
+)
+
+### Dimension 1
+p1 <- ggplot(var_contrib_df_1, aes(x = reorder(Variable, -Contribution), y = Contribution)) +
+  geom_bar(stat = "identity", fill = "black", color = "darkblue", width = 0.7) +
+  labs(title = "Contribution of variables to Dim-1",
+       x = "",
+       y = "Contributions (%)") +
+  theme_minimal() +
+  scale_x_discrete(labels = function(x) gsub("mean_", "", x)) +
+  theme(axis.text.x = element_text(angle = 0, size=12), axis.text.y = element_text(size=12),
+    axis.title.x = element_text(size=15), axis.title.y = element_text(size=15),
+    panel.grid.major.x = element_blank(),
+    panel.border = element_blank())
+print(p1)
+
+### Dimension 2
+var_contrib_2 <- get_pca_var(pca_vars)$contrib
+var_contrib_df_2 <- data.frame(
+  Variable = rownames(var_contrib_2),
+  Contribution = var_contrib_2[, 2])
+
+p2 <- ggplot(var_contrib_df_2, aes(x = reorder(Variable, -Contribution), y = Contribution)) +
+  geom_bar(stat = "identity", fill = "black", color = "darkblue", width = 0.7) +
+  labs(title = "Contribution of variables to Dim-2",
+       x = "", y = "Contributions (%)") +
+  theme_minimal() +
+  scale_x_discrete(labels = function(x) gsub("mean_", "", x)) +
+  theme(axis.text.x = element_text(angle = 0, size=12), axis.text.y = element_text(size=12),
+    axis.title.x = element_text(size=15), axis.title.y = element_text(size=15),
+    panel.grid.major.x = element_blank(),
+    panel.border = element_blank())
+print(p2)
+
+######## Relationships between PCA scores and stability measures ########
+###Nutrient gradient was represented by PC1 
+summary(lm(log10(foodweb_sta) ~ PC1, data = dd))
+summary(lm(log10(trophic_sta) ~ PC1, data = dd))
+summary(lm(log10(trophic_asyn) ~ PC1, data = dd))
+
+#### Then we do the SEM for trophic stability ####
+sem_TrophicStability_PCA <- psem(
+  lm(log10(trophic_sta) ~ log10(species_asynchrony_Zooplankton) +  log10(species_asynchrony_Phytoplankton) +
+       log10(species_stability_Phytoplankton) + log10(species_stability_Zooplankton) + log10(rich_Phytoplankton) + PC2, data = dd),
+  lm(log10(species_asynchrony_Phytoplankton) ~  PC1 , data = dd),
+  lm(log10(species_stability_Phytoplankton) ~  PC2 +log10(rich_Zooplankton), data = dd),
+  lm(log10(species_asynchrony_Zooplankton) ~ PC1 + log10(rich_Zooplankton), data = dd),
+  lm(log10(species_stability_Zooplankton) ~   log10(rich_Phytoplankton), data = dd),
+  lm(log10(rich_Zooplankton) ~ PC1, data = dd),
+  
+  #log10(species_asynchrony_Phytoplankton) %~~% log10(species_stability_Phytoplankton),
+  log10(rich_Phytoplankton) %~~% log10(rich_Zooplankton),
+  
+  data = dd)
+dSep(sem_TrophicStability_PCA)
+summary(sem_TrophicStability_PCA)
+
+########## SEM for trophic asynchrony ####
+sem_TrophicAsynchrony_PCA <- psem(
+  lm(log10(trophic_asyn) ~  log10(Total_Biomass_Phytoplankton), data = dd),
+  lm(log10(Total_Biomass_Phytoplankton) ~   PC1,  data = dd),
+  lm(log10(MC_prop) ~   PC1 + PC2, data = dd),
+  
+  data = dd 
+)
+dSep(sem_TrophicAsynchrony_PCA)
+summary(sem_TrophicAsynchrony_PCA)
+
+######################################## Make the graphs for PC1 representing nutrient gradient with stability metirics
+library(cowplot)
+my_theme <- theme_bw() +
+  theme(
+    axis.title.x = element_text(size = 25), axis.title.y = element_text(size = 25),
+    axis.text.x = element_text(size = 20), axis.text.y = element_text(size = 20),
+    panel.grid = element_blank(),
+    axis.line = element_line(colour = "black"),
+    legend.position = "right",
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size = 15),
+    legend.key.size = unit(0.5, "cm"), ### size of the legend symbols
+    legend.key = element_rect(fill = "white", colour = "white"))
+
+P_foodwebsta_PCA <- ggplot(dd, aes(x = PC1, y = log10(foodweb_sta))) +
+  geom_point(size = 10, stroke = 1.5, color = "#00468BFF") +
+  geom_smooth(method = "lm", se = TRUE, color = "#00468BFF", linewidth = 2) +
+  scale_y_continuous(limits = c(-0.2, 0.6), breaks = seq(-0.2, 0.6, 0.2)) +
+  labs(y = "Log10 (Multi-trophic stability)", 
+       x = "PC1 (Nutrient gradient)") +
+  annotate("text", x = min(dd$PC1), y = 0.6, 
+           label = expression(italic(R^2)~"="~0.245*", "~italic(P)~"="~0.004), 
+           hjust = 0, parse = TRUE,color = "#00468BFF",
+           size = 6) +
+  my_theme
+P_foodwebsta_PCA_1 <- ggdraw(P_foodwebsta_PCA) +
+  draw_label("A",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+P_foodwebsta_PCA_1
+
+P_trophicsta_PCA <- ggplot(dd, aes(x = PC1, y = log10(trophic_sta))) +
+  geom_point(size = 10, stroke = 1.5, color = "#00468BFF") +
+  geom_smooth(method = "lm", se = TRUE, color = "#00468BFF", linewidth = 2) +
+  scale_y_continuous(limits = c(-0.2, 0.6), breaks = seq(-0.2, 0.6, 0.2)) +
+  labs(y = "Log10 (Within-trophic stability)", 
+       x = "PC1 (Nutrient gradient)") +
+  annotate("text", x = min(dd$PC1), y = 0.6, 
+           label = expression(italic(R^2)~"="~0.231*", "~italic(P)~"="~0.005), 
+           hjust = 0, parse = TRUE,color = "#00468BFF",
+           size = 6) +
+  my_theme
+P_trophicsta_PCA_1 <- ggdraw(P_trophicsta_PCA) +
+  draw_label("B",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+P_trophicsta_PCA_1
+
+P_trophicasyn_PCA <- ggplot(dd, aes(x = PC1, y = log10(trophic_asyn))) +
+  geom_point(size = 10, stroke = 1.5, color = "#00468BFF") +
+  geom_smooth(method = "lm", se = TRUE, color = "#00468BFF", linewidth = 2, linetype = "dashed") +
+  #scale_y_continuous(limits = c(-0.4, 0.6), breaks = seq(-0.4, 0.6, 0.2)) +
+  labs(y = "Log10 (Cross-trophic asynchrony)", 
+       x = "PC1 (Nutrient gradient)") +
+  annotate("text", x = min(dd$PC1), y = 0.15, 
+           label = expression(italic(R^2)~"="~0.097*", "~italic(P)~"="~0.083), 
+           hjust = 0, parse = TRUE,color = "#00468BFF",
+           size = 6) +
+  my_theme
+P_trophicasyn_PCA_1 <- ggdraw(P_trophicasyn_PCA) +
+  draw_label("C",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
+P_trophicasyn_PCA_1
+
+# Combine the plots
+P_StaMetrics_PCA <- P_foodwebsta_PCA_1 + P_trophicsta_PCA_1 + P_trophicasyn_PCA_1 
+P_StaMetrics_PCA
+
