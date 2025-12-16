@@ -63,13 +63,36 @@ sem_TrophicStability_glob <- psem(
 dSep(sem_TrophicStability_glob)
 summary(sem_TrophicStability_glob)
 
+########################################################## Shapley value decomposition ####
+#For Taihu Lake
+dd$log_foodweb  <- log10(dd$foodweb_sta)
+dd$log_trophic  <- log10(dd$trophic_sta)
+dd$log_asyn     <- log10(dd$trophic_asyn)
 
+R2_xt      <- summary(lm(log_foodweb ~ log_trophic, data=dd))$r.squared
+R2_xa      <- summary(lm(log_foodweb ~ log_asyn, data=dd))$r.squared
+R2_xtxa    <- summary(lm(log_foodweb ~ log_trophic + log_asyn, data=dd))$r.squared
+shap_troph <- 0.5*(R2_xt + (R2_xtxa - R2_xa))
+shap_asyn  <- 0.5*(R2_xa + (R2_xtxa - R2_xt))
 
+shap_values_Taihu <- data.frame(
+  Component = c("Trophic Stability", "Trophic Asynchrony"),
+  Shapley_Value = c(shap_troph, shap_asyn)
+)
+print(shap_values_Taihu)
 
+#For 30 independent lakes
+dd_indLake$log_foodweb  <- log10(dd_indLake$foodweb_sta)
+dd_indLake$log_trophic  <- log10(dd_indLake$trophic_sta)
+dd_indLake$log_asyn     <- log10(dd_indLake$trophic_asyn)
+R2_xt_ind      <- summary(lm(log_foodweb ~ log_trophic, data=dd_indLake))$r.squared
+R2_xa_ind      <- summary(lm(log_foodweb ~ log_asyn, data=dd_indLake))$r.squared
+R2_xtxa_ind    <- summary(lm(log_foodweb ~ log_trophic + log_asyn, data=dd_indLake))$r.squared
+shap_troph_ind <- 0.5*(R2_xt_ind + (R2_xtxa_ind - R2_xa_ind))
+shap_asyn_ind  <- 0.5*(R2_xa_ind + (R2_xtxa_ind - R2_xt_ind))
 
-
-
-
-
-
-
+shap_values_indLakes <- data.frame(
+  Component = c("Trophic Stability", "Trophic Asynchrony"),
+  Shapley_Value = c(shap_troph_ind, shap_asyn_ind)
+)
+print(shap_values_indLakes)
