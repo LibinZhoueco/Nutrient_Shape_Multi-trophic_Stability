@@ -31,7 +31,8 @@ my_theme <- theme_bw() +
     legend.title = element_text(size = 18),
     legend.text = element_text(size = 15),
     legend.key.size = unit(0.5, "cm"), ### size of the legend symbols
-    legend.key = element_rect(fill = "white", colour = "white"))
+    legend.key = element_rect(fill = "white", colour = "white"),
+    axis.ticks.length = unit(0.3, "cm"))
 
 ########################### Muiti-trophic stability vs TP
 ## Taihu lake
@@ -54,20 +55,23 @@ p_foodwebsta_TH_1
 ## 30 lakes
 summary(lm(log10(foodweb_sta) ~ log10(TP) , data = dd_global_1))
 
-p_foodwebsta_glo <- ggplot(dd_global_1, aes(x = log10(TP), y = log10(foodweb_sta))) +
-  geom_point(size = 10, stroke = 1.5, shape = 1, color = "darkred") +
+p_foodwebsta_glo <- ggplot(dd_global_1, aes(x = log(TP), y = log(foodweb_sta))) +
+  geom_point(size = 10, stroke = 1.5,
+             aes(color = ifelse(Siteid == "Lake_Taihu", "Lake_Taihu", "Other"),
+                 shape = ifelse(Siteid == "Lake_Taihu", "Lake_Taihu", "Other"))) +
   geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2) +
-  scale_y_continuous(limits = c(-0.4, 1.2), breaks = seq(-0.4, 1.2, 0.4)) +
-  scale_x_continuous(limits = c(-2.5, 0.5), 
-                     breaks = seq(-2.5, 0.5, 0.5)) +
-  labs(y = "Log10 (Multi-trophic stability)", 
-       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
-  annotate("text", x = min(log10(dd_global_1$TP)), y = 1.2, 
-           label = expression(italic(R^2)~"="~0.656*", "~italic(P)~"<"~0.001), 
-           hjust = 0, parse = TRUE,color = "darkred",
-           size = 6) +
+  scale_color_manual(values = c("Lake_Taihu" = "#00468BFF", "Other" = "darkred")) +
+  scale_shape_manual(values = c("Lake_Taihu" = 16, "Other" = 1)) +
+  scale_y_continuous(limits = c(-0.5, 3), breaks = seq(-0.5, 3, 1)) +
+  scale_x_continuous(limits = c(-6, 1), breaks = seq(-6, 1, 2)) +
+  labs(y = "Ln (Multi-trophic stability)",
+       x = expression("Ln (Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  annotate("text", x = min(log(dd_global_1$TP)), y = 3,
+           label = expression(italic(R[m]^2)~"="~0.66*", "~italic(P)~"<"~0.001),
+           hjust = 0, parse = TRUE, color = "darkred", size = 6)+
   theme_bw() +
-  my_theme
+  my_theme +
+  theme(legend.position = "none")
 p_foodwebsta_glo
 p_foodwebsta_glo_1 <- ggdraw(p_foodwebsta_glo) +
   draw_label("D",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
@@ -100,13 +104,17 @@ p_trophicsta_TH_1
 ## 30 lakes
 summary(lm(log10(trophic_sta) ~ log10(TP) , data = dd_global_1))
 p_trophicsta_glo <- ggplot(dd_global_1, aes(x = log10(TP), y = log10(trophic_sta))) +
-  geom_point(size = 10, stroke = 1.5, shape = 1, color = "darkred") +
+ geom_point(size = 10, stroke = 1.5,
+             aes(color = ifelse(Siteid == "Lake_Taihu", "Lake_Taihu", "Other"),
+                 shape = ifelse(Siteid == "Lake_Taihu", "Lake_Taihu", "Other"))) +
   geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2) +
-  scale_x_continuous(limits = c(-2.5, 0.5), 
-                     breaks = seq(-2.5, 0.5, 0.5)) +
-  scale_y_continuous(limits = c(-0.4, 1.2), breaks = seq(-0.4, 1.2, 0.4)) +
-  labs(y = "Log10 (Within-trophic stability)", 
-       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
+  scale_color_manual(values = c("Lake_Taihu" = "#00468BFF", "Other" = "darkred")) +
+  scale_shape_manual(values = c("Lake_Taihu" = 16, "Other" = 1)) +
+  scale_y_continuous(limits = c(-1.0, 3.0), breaks = seq(-1.0, 3.0, 1.0),
+                     labels = scales::number_format(accuracy = 0.1)) +
+  scale_x_continuous(limits = c(-6, 1), breaks = seq(-6, 1, 2)) +
+  labs(y = "Ln (Within-trophic stability)",
+       x = expression("Ln (Total phosphorus, " * mg ~ L^{-1} * ")")) 
   annotate("text", x = min(log10(dd_global_1$TP)), y = 1.2, 
            label = expression(italic(R^2)~"="~0.639*", "~italic(P)~"<"~0.001), 
            hjust = 0, parse = TRUE,color = "darkred",
@@ -140,14 +148,22 @@ p_trophicasyn_TH_1
 ## 30 lakes
 summary(lm(log10(trophic_asyn) ~ log10(TP) , data = dd_global_1))
 p_trophicasyn_glo <- ggplot(dd_global_1, aes(x = log10(TP), y = log10(trophic_asyn))) +
-  geom_point(size = 10, stroke = 1.5, shape = 1, color = "darkred") +
-  geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2, linetype = "dashed") +
-  scale_y_continuous(limits = c(0, 0.2), breaks = seq(0, 0.2, 0.05)) +
-  scale_x_continuous(limits = c(-2.5, 0.5), 
-                     breaks = seq(-2.5, 0.5, 0.5)) +
-  labs(y = "Log10 (Cross-trophic asynchrony)", 
-       x = expression("Log10(Total phosphorus, " * mg ~ L^{-1} * ")")) +
-  theme_bw() + my_theme
+    geom_point(size = 10, stroke = 1.5,
+             aes(color = ifelse(Siteid == "Lake_Taihu", "Lake_Taihu", "Other"),
+                 shape = ifelse(Siteid == "Lake_Taihu", "Lake_Taihu", "Other"))) +
+    geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 2, linetype = "dashed") +
+    scale_color_manual(values = c("Lake_Taihu" = "#00468BFF", "Other" = "darkred")) +
+    scale_shape_manual(values = c("Lake_Taihu" = 16, "Other" = 1)) +
+    scale_y_continuous(limits = c(0, 0.82), breaks = seq(0, 0.82, 0.2)) +
+    scale_x_continuous(limits = c(-6, 1), breaks = seq(-6, 1, 2)) +
+    labs(y = "Ln (Cross-trophic asynchrony)",
+      x = expression("Ln (Total phosphorus, " * mg ~ L^{-1} * ")")) +
+    annotate("text", x = min(log(dd_global_1$TP)), y = 0.82,
+           label = expression(italic(R[m]^2)~"<"~0.01*", "~italic(P)~"="~0.969),
+           hjust = 0, parse = TRUE, color = "darkred", size = 6)+
+    theme_bw() +
+    my_theme +
+    theme(legend.position = "none")
 p_trophicasyn_glo
 p_trophicasyn_glo_1 <- ggdraw(p_trophicasyn_glo) +
   draw_label("F",  x = 0, y = 1, hjust = -0.5, vjust = 1.5, size = 20, fontface = "bold")
@@ -158,66 +174,171 @@ library(patchwork)
 P_fodowebstaMetric <- (p_foodwebsta_TH_1 + p_trophicsta_TH_1 + p_trophicasyn_TH_1)/ (p_foodwebsta_glo_1 + p_trophicsta_glo_1 + p_trophicasyn_glo_1) 
 P_fodowebstaMetric
 
-
 ################################ Maps for sampling sites
 library(sf)     
 library(rnaturalearth) 
 library(rnaturalearthdata)
 library(rnaturalearth)
 ##########
-DD_sites <- read.csv("Site_Coordinate.csv", check.name = FALSE) 
-sf_use_s2(FALSE)
-world_map <- ne_countries(scale = "large", returnclass = "sf") %>%
+DD_sites <- DD_sites %>%
+  mutate(Country = case_when(
+    grepl("^[0-9]+$", Siteid)              ~ "Denmark",
+    Siteid %in% c("SP", "CR", "ME", "MO") ~ "U.S.",
+    Siteid == "Lake_Taihu"                 ~ "China",
+    TRUE                                   ~ "Sweden"
+  ))
+
+world_map <- ne_countries(scale = "medium", returnclass = "sf") %>%
   st_make_valid() %>%
   st_union()
 
-Main_plot <- ggplot() +
-  geom_sf(data = world_map, fill = "azure1") +
-  theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.title = element_blank(),
-    axis.ticks.length = unit(0, "pt"),
-  ) +
-  geom_point(data = DD_sites, aes(x = Longitude, y = Latitude), size = 1.5, alpha = 1, color = "#E31A1C") +
-  theme(legend.position = "right",
-        legend.title = element_text(size = 20),
-        legend.text = element_text(size = 15)) +
-  coord_sf(expand = FALSE) 
-Main_plot
-
-################################# For marine systems
-library(rnaturalearthdata)
-DD_europe <- DD_sites %>%
-  filter(!Siteid %in% c("MO", "ME", "SP","CR","Lake_Taihu"))
+usa_map <- ne_countries(scale = "medium", returnclass = "sf") %>%
+  filter(name_en == "United States of America")
 
 nordic_countries <- ne_countries(scale = "medium", returnclass = "sf") %>%
   filter(name_en %in% c("Sweden", "Denmark"))
+
+country_colors <- c("China"   = "#E41A1C",
+                    "Denmark" = "#377EB8",
+                    "Sweden"  = "#4DAF4A",
+                    "U.S."    = "#FF7F00")
+
+#########------------------  Main plots
+Main_plot <- ggplot() +
+  geom_sf(data = world_map, fill = "azure1") +
+  geom_point(data = DD_sites,
+             aes(x = Longitude, y = Latitude, color = Country),
+             size = 1.5, alpha = 1) +
+  scale_color_manual(values = country_colors, name = "Country") +
+  annotate("rect",
+           xmin = -90.5, xmax = -88.8, ymin = 45.5, ymax = 46.5,
+           color = "steelblue", fill = NA, linetype = "solid", linewidth = 0.6) +
+  annotate("rect",
+           xmin = -90.2, xmax = -88.6, ymin = 42.5, ymax = 43.6,
+           color = "steelblue", fill = NA, linetype = "solid", linewidth = 0.6) +
+  annotate("rect",
+           xmin = 8, xmax = 25, ymin = 54, ymax = 70,
+           color = "steelblue", fill = NA, linetype = "solid", linewidth = 0.6) +
+  coord_sf(expand = FALSE) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",               
+    legend.direction = "horizontal",      
+    legend.background = element_rect(fill = "white", color = NA),
+    legend.title = element_text(size = 9, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, "cm"),
+    axis.title = element_blank(),
+    axis.ticks.length = unit(0, "pt")
+  )
+
+legend_top <- get_legend(Main_plot) 
+
+Main_plot <- Main_plot +
+  theme(legend.position = "none")       
+
+############
+DD_usa_north <- DD_sites %>% filter(Siteid %in% c("CR", "SP"))
+p_usa_north <- ggplot() +
+  geom_sf(data = usa_map, fill = "azure1", color = "black", linewidth = 0.3) +
+  geom_point(data = DD_usa_north,
+             aes(x = Longitude, y = Latitude, color = Country),
+             size = 2.5, alpha = 0.8) +
+  scale_color_manual(values = country_colors) +
+  annotation_scale(                        location = "bl",
+                                           width_hint = 0.25,                     
+                                           text_cex = 0.45,                       
+                                           line_width = 0.5,                      
+                                           height = unit(0.1, "cm"),             
+                                           pad_x = unit(0.1, "cm"),
+                                           pad_y = unit(0.1, "cm")) +
+  coord_sf(xlim = c(-89.560, -89.8), ylim = c(45.95, 46.06)) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    legend.position = "none",
+    panel.grid = element_line(color = "gray90", linewidth = 0.2),
+    panel.background = element_rect(fill = "white", color = "steelblue", linewidth = 0.6),
+    plot.background = element_rect(fill = "white", color = "steelblue", linewidth = 0.6),
+    plot.margin = margin(2, 2, 2, 2)
+  )
+
+############## Sourth America
+DD_usa_south <- DD_sites %>% filter(Siteid %in% c("ME", "MO"))
+
+p_usa_south <- ggplot() +
+  geom_sf(data = usa_map, fill = "azure1", color = "black", linewidth = 0.3) +
+  geom_point(data = DD_usa_south,
+             aes(x = Longitude, y = Latitude, color = Country),
+             size = 2.5, alpha = 0.8) +
+  scale_color_manual(values = country_colors) +
+  annotation_scale(                        location = "bl",
+                                           width_hint = 0.25,
+                                           text_cex = 0.45,
+                                           line_width = 0.5,
+                                           height = unit(0.1, "cm"),
+                                           pad_x = unit(0.1, "cm"),
+                                           pad_y = unit(0.1, "cm")) +
+  coord_sf(xlim = c(-89.3, -89.5), ylim = c(43.05, 43.12)) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    legend.position = "none",
+    panel.grid = element_line(color = "gray90", linewidth = 0.2),
+    panel.background = element_rect(fill = "white", color = "steelblue", linewidth = 0.6),
+    plot.background = element_rect(fill = "white", color = "steelblue", linewidth = 0.6),
+    plot.margin = margin(2, 2, 2, 2)
+  )
+
+###############---------- Europe
+DD_europe <- DD_sites %>%
+  filter(!Siteid %in% c("MO", "ME", "SP", "CR", "Lake_Taihu"))
 p_euro <- ggplot() +
-  geom_sf(data = nordic_countries, fill = "azure1", color = "black", size = 0.3) +
-  geom_point(data = DD_europe, 
-             aes(x = Longitude, y = Latitude),
-             color = "#E31A1C", size = 2, alpha = 0.8) +
+  geom_sf(data = nordic_countries, fill = "azure1", color = "black", linewidth = 0.3) +
+  geom_point(data = DD_europe,
+             aes(x = Longitude, y = Latitude, color = Country),
+             size = 2, alpha = 0.8) +
+  scale_color_manual(values = country_colors) +
+  annotation_scale(                        location = "bl",
+                                           width_hint = 0.25,
+                                           text_cex = 0.45,
+                                           line_width = 0.5,
+                                           height = unit(0.1, "cm"),
+                                           pad_x = unit(0.1, "cm"),
+                                           pad_y = unit(0.1, "cm")) +
   coord_sf(xlim = c(8, 25), ylim = c(54, 70)) +
   theme_minimal() +
   theme(
-    axis.text = element_blank(),      # 删除坐标轴刻度标签
-    axis.title = element_blank(),     # 删除坐标轴标题
-    panel.grid = element_line(color = "gray90", size = 0.2),
-    panel.background = element_rect(fill = "white")
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    legend.position = "none",
+    panel.grid = element_line(color = "gray90", linewidth = 0.2),
+    panel.background = element_rect(fill = "white", color = "steelblue", linewidth = 0.6),
+    plot.margin = margin(2, 2, 2, 2)
   )
-p_euro
 
-europe_grob <- ggplotGrob(p_euro)
-Main_plot_1 <- Main_plot +
-  annotation_custom(grob = europe_grob,
-                    xmin = -60, xmax = 30,
-                    ymin = -60, ymax = 40)
-Main_plot_1
+#------------- Combine these graphs
+combined <- ggdraw() +
+  draw_plot(Main_plot,   x = 0,    y = 0,    width = 1,    height = 0.95) + 
+draw_plot(p_usa_north, x = 0.01, y = 0.52, width = 0.17, height = 0.25) +
+  draw_plot(p_usa_south, x = 0.01, y = 0.25, width = 0.17, height = 0.25) +
+  draw_plot(p_euro,      x = 0.76, y = 0.10, width = 0.22, height = 0.50) +
+  draw_plot(legend_top,  x = 0.3,  y = 0.95, width = 0.4,  height = 0.05)   
+# ------------- 
+final_plot <- combined +
+  draw_line(x = c(0.298, 0.18), y = c(0.75,  0.55),
+            color = "steelblue", linetype = "dashed", linewidth = 0.4) +
+  draw_line(x = c(0.298, 0.18), y = c(0.75,  0.745),
+            color = "steelblue", linetype = "dashed", linewidth = 0.4) +
+  draw_line(x = c(0.298, 0.18), y = c(0.745, 0.30),
+            color = "steelblue", linetype = "dashed", linewidth = 0.4) +
+  draw_line(x = c(0.298, 0.18), y = c(0.745, 0.45),
+            color = "steelblue", linetype = "dashed", linewidth = 0.4) +
+  draw_line(x = c(0.569, 0.8),  y = c(0.800, 0.110),
+            color = "steelblue", linetype = "dashed", linewidth = 0.4) +
+  draw_line(x = c(0.569, 0.8),  y = c(0.8,   0.59),
+            color = "steelblue", linetype = "dashed", linewidth = 0.4)
 
-Extended_Figure_1 <- Main_plot_1
-
-
-
-
-
+final_plot
